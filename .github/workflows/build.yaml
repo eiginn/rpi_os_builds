@@ -1,0 +1,43 @@
+---
+name: build-piunora
+
+on:
+  push:
+    paths:
+      - 'piunora/**'
+
+jobs:
+  custopizer:
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Download Raspbian Image
+        run: |
+          mkdir "${{ github.workspace }}/piunora/build"
+          tree
+          cd "${{ github.workspace }}/piunora/build"
+          wget -c --trust-server-names --progress=dot:mega 'https://downloads.raspberrypi.org/raspios_lite_armhf_latest'
+          unzip *.zip
+          mv *.img input.img
+          tree
+
+      - name: Run CustoPiZer
+        uses: OctoPrint/CustoPiZer@main
+        with:
+          workspace: "${{ github.workspace }}/piunora/build"
+          scripts:  "${{ github.workspace }}/piunora/scripts"
+          config: "${{ github.workspace }}/piunora/config.local"
+
+      - name: Compress image
+        run: |
+          cd "${{ github.workspace }}/piunora/build"
+          gzip output.img
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: image_build
+          path: "${{ github.workspace }}/piunora/build/output.img.gz"
